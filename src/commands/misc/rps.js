@@ -1,26 +1,39 @@
 const {
+    Client,
+    Interaction,
     ApplicationCommandOptionType,
     EmbedBuilder,
     ButtonBuilder,
     ActionRowBuilder,
     ButtonStyle,
-    ChatInputCommandInteraction,
 } = require("discord.js");
 
-const chocies = [
+const choices = [
     { name: "Rock", emoji: "🪨", beats: "Scissors" },
-    { name: "Paper", emoji: "📜", beats: "Rock" },
+    { name: "Paper", emoji: "📃", beats: "Rock" },
     { name: "Scissors", emoji: "✂", beats: "Paper" },
 ];
 
 module.exports = {
     /**
      *
-     * @param {object} param0
-     * @param {ChatInputCommandInteraction} param0.interaction
-     * @returns
+     * @param {Client} client
+     * @param {Interaction} interaction
      */
-    callback: async ({ interaction }) => {
+
+    name: "rps",
+    description: "Play rock paper scissor with another user",
+    dm_premission: false,
+    options: [
+        {
+            name: "user",
+            description: "The user you want to play with",
+            type: ApplicationCommandOptionType.User,
+            required: true,
+        },
+    ],
+
+    callback: async (client, interaction) => {
         try {
             const targetUser = interaction.options.getUser("user");
             if (interaction.user.id === targetUser.id) {
@@ -45,7 +58,7 @@ module.exports = {
                 .setColor("Blue")
                 .setTimestamp(new Date());
 
-            const button = chocies.map((choice) => {
+            const button = choices.map((choice) => {
                 return new ButtonBuilder()
                     .setCustomId(choice.name)
                     .setLabel(choice.name)
@@ -60,20 +73,81 @@ module.exports = {
                 embeds: [embed],
                 components: [row],
             });
+            const targetUserInteraction = await reply
+                .awaitMessageComponent({
+                    filter: (i) => i.user.id === targetUser.id,
+                    time: 50_000,
+                })
+                .catch(async (error) => {
+                    embed.setDescription(
+                        `Game over. ${targetUser} does not respond in time.`
+                    );
+                    await interaction.editReply({
+                        embeds: [embed],
+                        components: [],
+                    });
+                });
+            if (!targetUserInteraction) return;
+
+            const targetUserChoice = choices.find(
+                (choice) => choice.name === targetUserInteraction.customId
+            );
+
+            await targetUserInteraction.reply({
+                content: `You picked ${
+                    targetUserChoice.name + targetUserChoice.emoji
+                }`,
+                ephemeral: true,
+            });
+
+            embed.setDescription(`It's currently ${interaction.user}'s turn.`);
+            await interaction.editReply({
+                content: `${interaction.user} it's your turn now.`,
+                embeds: [embed],
+            });
+
+            const initialUserInteraction = await reply
+                .awaitMessageComponent({
+                    filter: (i) => i.user.id === interaction.user.id,
+                    time: 50_000,
+                })
+                .catch(async (error) => {
+                    embed.setDescription(
+                        `Game over. ${interaction.user} does not respond in time.`
+                    );
+                    await interaction.editReply({
+                        embeds: [embed],
+                        components: [],
+                    });
+                });
+            if (!initialUserInteraction) return;
+
+            const initialUserChoice = choices.find(
+                (choice) => choice.name === initialUserInteraction.customId
+            );
+            let result;
+            if (targetUserChoice.beats === initialUserChoice.name) {
+                result = `${targetUser} won!`;
+            }
+            if (initialUserChoice.beats === targetUserChoice.name) {
+                result = `${interaction.user} won!`;
+            }
+            if (initialUserChoice.name === targetUserChoice.name) {
+                result = "It was a tie!";
+            }
+            embed.setDescription(
+                `${targetUser} picked ${
+                    targetUserChoice.name + targetUserChoice.emoji
+                }\n
+                ${interaction.user} picked ${
+                    initialUserChoice.name + initialUserChoice.emoji
+                }
+                \n\n${result}`
+            );
+            interaction.editReply({ embeds: [embed], components: [] });
         } catch (error) {
             console.log("error with /rps");
             console.log(error);
         }
     },
-    name: "rps",
-    description: "Play rock paper scissor with another user",
-    dm_premission: false,
-    options: [
-        {
-            name: "user",
-            description: "The user you want to play with",
-            type: ApplicationCommandOptionType.User,
-            required: true,
-        },
-    ],
 };
