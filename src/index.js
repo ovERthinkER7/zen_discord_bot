@@ -28,23 +28,23 @@ const client = new Client({
                 type: ActivityType.Listening,
             });
         });
-        client.on("presenceUpdate", (oldPresence, newPresence) => {
-            const member = newPresence.member;
-            const guildId = member.guild.id;
-            const guildSettings = client.guildSettings.get(guildId);
+        // client.on("presenceUpdate", (oldPresence, newPresence) => {
+        //     const member = newPresence.member;
+        //     const guildId = member.guild.id;
+        //     const guildSettings = client.guildSettings.get(guildId);
 
-            if (guildSettings?.loggingEnabled && guildSettings?.logChannel) {
-                const channel = client.channels.cache.get(
-                    guildSettings.logChannel
-                );
+        //     if (guildSettings?.loggingEnabled && guildSettings?.logChannel) {
+        //         const channel = client.channels.cache.get(
+        //             guildSettings.logChannel
+        //         );
 
-                if (channel) {
-                    channel.send(
-                        `${member.displayName} is now ${newPresence.status}`
-                    );
-                }
-            }
-        });
+        //         if (channel) {
+        //             channel.send(
+        //                 `${member.displayName} is now ${newPresence.status}`
+        //             );
+        //         }
+        //     }
+        // });
 
         client.login(process.env.TOKEN);
     } catch (error) {
